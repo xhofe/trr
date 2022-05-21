@@ -62,12 +62,10 @@ impl Tree {
                 } else {
                     ("├", "│")
                 };
-                self.println(&format!(
-                    "{}{}── {}",
-                    prefix,
-                    prefix1,
-                    self.file_name(&path)
-                ));
+                self.file_name(&path).and_then(|file_name| -> Option<()> {
+                    self.println(&format!("{}{}── {}", prefix, prefix1, file_name));
+                    Some(())
+                });
                 if path.is_dir() {
                     self.dfs(&path, depth + 1, prefix.clone() + prefix2 + "   ")?
                 }
@@ -76,8 +74,8 @@ impl Tree {
         Ok(())
     }
 
-    fn file_name(&self, path: &Path) -> String {
-        path.file_name().unwrap().to_str().unwrap().to_owned()
+    fn file_name(&self, path: &Path) -> Option<String> {
+        Some(path.file_name()?.to_str()?.to_owned())
     }
 
     fn println(&mut self, s: &str) {
@@ -89,7 +87,7 @@ impl Tree {
                     std::process::exit(1);
                 }
             }
-        }else {
+        } else {
             println!("{}", s);
         }
     }
