@@ -1,0 +1,16 @@
+[package]
+name = "rtr"
+version = "0.1.0"
+authors = ["Noah Hsu"]
+edition = "2021"
+description = "Tree command written in Rust"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+
+[dependencies]
+clap = {version = "3.1.18",features = ["derive"]}
