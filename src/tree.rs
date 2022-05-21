@@ -1,13 +1,14 @@
 use std::{
     collections::LinkedList,
-    io,
+    fs, io,
     path::{Path, PathBuf},
 };
 
-use crate::cmd::{Args, Sort};
+use crate::cmd::Args;
 
 pub struct Tree {
     pub config: Args,
+    pub output: Option<Box<dyn io::Write>>,
     pub paths: LinkedList<PathBuf>,
 }
 
@@ -15,7 +16,15 @@ impl Tree {
     pub fn new(config: Args) -> Self {
         let mut paths = LinkedList::new();
         paths.push_back(PathBuf::from(config.path.clone()));
-        Self { config, paths }
+        let output = match config.output {
+            Some(ref path) => Some(Box::new(fs::File::create(path).unwrap()) as Box<dyn io::Write>),
+            None => None,
+        };
+        Self {
+            config,
+            paths,
+            output,
+        }
     }
 
     #[allow(unused)]
@@ -53,17 +62,35 @@ impl Tree {
                 } else {
                     ("├", "│")
                 };
-                println!(
+                self.println(&format!(
                     "{}{}── {}",
                     prefix,
                     prefix1,
-                    path.file_name().unwrap().to_str().unwrap()
-                );
+                    self.file_name(&path)
+                ));
                 if path.is_dir() {
                     self.dfs(&path, depth + 1, prefix.clone() + prefix2 + "   ")?
                 }
             }
         }
         Ok(())
+    }
+
+    fn file_name(&self, path: &Path) -> String {
+        path.file_name().unwrap().to_str().unwrap().to_owned()
+    }
+
+    fn println(&mut self, s: &str) {
+        if let Some(ref mut o) = self.output {
+            match writeln!(o, "{}", s) {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(1);
+                }
+            }
+        }else {
+            println!("{}", s);
+        }
     }
 }
