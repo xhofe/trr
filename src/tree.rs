@@ -117,7 +117,7 @@ impl Tree {
         if self.config.quote {
             file_name = format!("\"{}\"", file_name);
         }
-        let res = match path.is_symlink() {
+        let mut res = match path.is_symlink() {
             false => {
                 if !self.config.color {
                     file_name
@@ -138,6 +138,9 @@ impl Tree {
                 }
             }
         };
+        if self.config.size || self.config.human_size {
+            res = format!("[{}] {}", self.size_to_string(path.metadata().ok()?.len()), res);
+        }
         Some(res)
     }
 
@@ -194,5 +197,9 @@ impl Tree {
                 order
             }
         })
+    }
+
+    fn size_to_string(&self, size: u64) -> String {
+        return format!("{}", size);
     }
 }
