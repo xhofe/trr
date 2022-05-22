@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::cmd::Args;
+use crate::cmd::{Args, Sort};
 
 pub struct Tree {
     pub config: Args,
@@ -50,7 +50,17 @@ impl Tree {
             let entries = dir
                 .read_dir()?
                 .filter_map(|x| match x.ok() {
-                    Some(x) => Some(x),
+                    Some(x) => {
+                        if self.config.all || !x.file_name().to_str().unwrap().starts_with(".") {
+                            if !self.config.directories || x.file_type().unwrap().is_dir() {
+                                Some(x)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }
+                    }
                     None => None,
                 })
                 .collect::<Vec<_>>();
