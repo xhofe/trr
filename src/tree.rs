@@ -200,6 +200,17 @@ impl Tree {
     }
 
     fn size_to_string(&self, size: u64) -> String {
-        return format!("{}", size);
+        if !self.config.human_size {
+            return format!("{}", size);
+        }
+        let mut size = size as f64;
+        let scale = 1024_f64;
+        let units = ["B", "K", "M", "G", "T", "P", "E", "Z", "Y"];
+        let mut unit = 0;
+        while size > scale && unit < units.len() - 1 {
+            size /= scale;
+            unit += 1;
+        }
+        format!("{:7.2}{}", size, units[unit])
     }
 }
