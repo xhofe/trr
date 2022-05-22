@@ -1,0 +1,105 @@
+name: release
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: false
+            file-ext: ""
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            cross: false
+            file-ext: .exe
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            cross: true
+            file-ext: .exe
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            cross: false
+            file-ext: ""
+          - target: x86_64-linux-android
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            cross: true
+            file-ext: ""
+          - target: aarch64-linux-android
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: aarch64-apple-ios
+            os: macos-latest
+            cross: true
+            file-ext: ""
+          - target: arm-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: armv7-unknown-linux-musleabihf
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          - target: armv7-linux-androideabi
+            os: ubuntu-latest
+            cross: true
+            file-ext: ""
+          
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: ${{ matrix.target }}
+          override: true
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: --release --target=${{ matrix.target }}
+      - name: strip
+        continue-on-error: true
+        run: strip -s target/${{ matrix.target }}/release/rtr${{ matrix.file-ext }}
+      - name: Run UPX
+        # Upx may not support some platforms. Ignore the errors
+        continue-on-error: true
+        uses: crazy-max/ghaction-upx@v1
+        with:
+          version: v3.96
+          files: target/${{ matrix.target }}/release/rtr${{ matrix.file-ext }}
+          args: -q --best --lzma
+      - name: pack
+        run: |
+          mkdir -p release-${{ matrix.target }}
+          cd release-${{ matrix.target }}
+          tar -C ../target/${{ matrix.target }}/release -zcf rtr-${{ matrix.target }}.tar.gz rtr${{ matrix.file-ext }}
+          openssl dgst -sha256 -r rtr-${{ matrix.target }}.tar.gz > rtr-${{ matrix.target }}.sha256
+      - name: release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-${{ matrix.target }}/*
