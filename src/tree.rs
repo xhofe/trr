@@ -4,7 +4,6 @@ use std::{
     fs::{self, DirEntry},
     io,
     path::{Path, PathBuf},
-    process::id,
 };
 
 use crate::cmd::{Args, Sort};
@@ -114,7 +113,10 @@ impl Tree {
     }
 
     fn file_name(&self, path: &Path) -> Option<String> {
-        let file_name = path.file_name()?.to_str()?.to_owned();
+        let mut file_name = path.file_name()?.to_str()?.to_owned();
+        if self.config.quote {
+            file_name = format!("\"{}\"", file_name);
+        }
         let res = match path.is_symlink() {
             false => {
                 if !self.config.color {
