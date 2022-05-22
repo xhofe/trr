@@ -82,16 +82,11 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target=${{ matrix.target }}
-      - name: strip
+      - name: Compress binaries
         continue-on-error: true
-        run: strip -s target/${{ matrix.target }}/release/trr${{ matrix.file-ext }}
-      - name: Run UPX
-        # Upx may not support some platforms. Ignore the errors
-        continue-on-error: true
-        uses: crazy-max/ghaction-upx@v1
+        uses: svenstaro/upx-action@v2
         with:
-          version: v3.96
-          files: target/${{ matrix.target }}/release/trr${{ matrix.file-ext }}
+          file: target/${{ matrix.target }}/release/trr${{ matrix.file-ext }}
           args: -q --best --lzma
       - name: pack
         run: |
