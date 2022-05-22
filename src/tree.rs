@@ -37,7 +37,6 @@ impl Tree {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("{}", e);
-                std::process::exit(1);
             }
         }
     }
@@ -78,14 +77,34 @@ impl Tree {
                 });
                 if path.is_dir() {
                     self.dfs(&path, depth + 1, prefix.clone() + prefix2 + "   ")?
+                } else {
+                    if self.config.follow_links {
+                        let mut path = path.read_link();
+                        if path.is_ok() {
+                            self.dfs(
+                                &path.unwrap(),
+                                depth + 1,
+                                prefix.clone() + prefix2 + "   ",
+                            )?
+                        }
+                    }
                 }
             }
+        } else {
+            eprintln!("invalid path: {}", dir.display());
         }
         Ok(())
     }
 
     fn file_name(&self, path: &Path) -> Option<String> {
-        Some(path.file_name()?.to_str()?.to_owned())
+        let file_name = path.file_name()?.to_str()?.to_owned();
+        match path.is_symlink() {
+            false => Some(file_name),
+            true => {
+                let link_name = path.read_link().ok()?.to_str()?.to_owned();
+                Some(format!("{} -> {}", file_name, link_name))
+            }
+        }
     }
 
     fn println(&mut self, s: &str) {
