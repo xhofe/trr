@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::cmd::{Args, Sort};
+use crate::cmd::Args;
+use colored::*;
+use is_executable::IsExecutable;
 
 pub struct Tree {
     pub config: Args,
@@ -79,13 +81,9 @@ impl Tree {
                     self.dfs(&path, depth + 1, prefix.clone() + prefix2 + "   ")?
                 } else {
                     if self.config.follow_links {
-                        let mut path = path.read_link();
+                        let path = path.read_link();
                         if path.is_ok() {
-                            self.dfs(
-                                &path.unwrap(),
-                                depth + 1,
-                                prefix.clone() + prefix2 + "   ",
-                            )?
+                            self.dfs(&path.unwrap(), depth + 1, prefix.clone() + prefix2 + "   ")?
                         }
                     }
                 }
@@ -98,13 +96,28 @@ impl Tree {
 
     fn file_name(&self, path: &Path) -> Option<String> {
         let file_name = path.file_name()?.to_str()?.to_owned();
-        match path.is_symlink() {
-            false => Some(file_name),
+        let res = match path.is_symlink() {
+            false => {
+                if !self.config.color {
+                    file_name
+                } else if path.is_dir() {
+                    file_name.cyan().to_string()
+                } else if path.is_executable() {
+                    file_name.green().bold().to_string()
+                } else {
+                    file_name.yellow().bold().to_string()
+                }
+            }
             true => {
                 let link_name = path.read_link().ok()?.to_str()?.to_owned();
-                Some(format!("{} -> {}", file_name, link_name))
+                if !self.config.color {
+                    format!("{} -> {}", file_name, link_name)
+                } else {
+                    format!("{} -> {}", file_name.blue(), link_name.red().bold())
+                }
             }
-        }
+        };
+        Some(res)
     }
 
     fn println(&mut self, s: &str) {
