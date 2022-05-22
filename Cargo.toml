@@ -1,5 +1,5 @@
 [package]
-name = "rtr"
+name = "trr"
 version = "0.1.0"
 authors = ["Noah Hsu"]
 edition = "2021"
@@ -14,7 +14,7 @@ codegen-units = 1
 panic = "abort"
 
 [[bin]]
-name = "rtr"
+name = "trr"
 path = "src/main.rs"
 
 [dependencies]

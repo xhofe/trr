@@ -84,21 +84,21 @@ jobs:
           args: --release --target=${{ matrix.target }}
       - name: strip
         continue-on-error: true
-        run: strip -s target/${{ matrix.target }}/release/rtr${{ matrix.file-ext }}
+        run: strip -s target/${{ matrix.target }}/release/trr${{ matrix.file-ext }}
       - name: Run UPX
         # Upx may not support some platforms. Ignore the errors
         continue-on-error: true
         uses: crazy-max/ghaction-upx@v1
         with:
           version: v3.96
-          files: target/${{ matrix.target }}/release/rtr${{ matrix.file-ext }}
+          files: target/${{ matrix.target }}/release/trr${{ matrix.file-ext }}
           args: -q --best --lzma
       - name: pack
         run: |
           mkdir -p release-${{ matrix.target }}
           cd release-${{ matrix.target }}
-          tar -C ../target/${{ matrix.target }}/release -zcf rtr-${{ matrix.target }}.tar.gz rtr${{ matrix.file-ext }}
-          openssl dgst -sha256 -r rtr-${{ matrix.target }}.tar.gz > rtr-${{ matrix.target }}.sha256
+          tar -C ../target/${{ matrix.target }}/release -zcf trr-${{ matrix.target }}.tar.gz trr${{ matrix.file-ext }}
+          openssl dgst -sha256 -r trr-${{ matrix.target }}.tar.gz > trr-${{ matrix.target }}.sha256
       - name: release
         uses: softprops/action-gh-release@v1
         with:
