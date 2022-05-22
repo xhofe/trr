@@ -1,10 +1,13 @@
 use std::{
+    cmp::Ordering,
     collections::LinkedList,
-    fs, io,
+    fs::{self, DirEntry},
+    io,
     path::{Path, PathBuf},
+    process::id,
 };
 
-use crate::cmd::Args;
+use crate::cmd::{Args, Sort};
 use colored::*;
 use is_executable::IsExecutable;
 
@@ -30,7 +33,22 @@ impl Tree {
     }
 
     #[allow(unused)]
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&mut self) -> Result<(), String> {
+        if self.config.version {
+            self.config.sort = Some(Sort::Version);
+        }
+        if self.config.time {
+            self.config.sort = Some(Sort::Mtime);
+        }
+        if self.config.change {
+            self.config.sort = Some(Sort::Ctime);
+        }
+        if self.config.unsorted {
+            self.config.sort = None;
+        }
+        if self.config.sort == Some(Sort::Version) {
+            eprintln!("{}", "Sorting by version is not supported yet".red());
+        }
         Ok(())
     }
 
@@ -48,7 +66,7 @@ impl Tree {
             return Ok(());
         }
         if dir.is_dir() {
-            let entries = dir
+            let mut entries = dir
                 .read_dir()?
                 .filter_map(|x| match x.ok() {
                     Some(x) => {
@@ -65,6 +83,7 @@ impl Tree {
                     None => None,
                 })
                 .collect::<Vec<_>>();
+            self.sort(&mut entries);
             for (index, entry) in entries.iter().enumerate() {
                 let path = entry.path();
                 let is_last = index == entries.len() - 1;
@@ -132,5 +151,46 @@ impl Tree {
         } else {
             println!("{}", s);
         }
+    }
+
+    fn sort(&self, entries: &mut Vec<DirEntry>) {
+        entries.sort_by(|a, b| {
+            if self.config.dirsfirst {
+                if a.file_type().unwrap().is_dir() && !b.file_type().unwrap().is_dir() {
+                    return Ordering::Less;
+                } else if !a.file_type().unwrap().is_dir() && b.file_type().unwrap().is_dir() {
+                    return Ordering::Greater;
+                }
+            }
+            let order = match self.config.sort {
+                Some(Sort::Mtime) => {
+                    let a_mtime = a.path().metadata().unwrap().modified().unwrap();
+                    let b_mtime = b.path().metadata().unwrap().modified().unwrap();
+                    a_mtime.cmp(&b_mtime)
+                }
+                Some(Sort::Ctime) => {
+                    let a_ctime = a.path().metadata().unwrap().accessed().unwrap();
+                    let b_ctime = b.path().metadata().unwrap().accessed().unwrap();
+                    a_ctime.cmp(&b_ctime)
+                }
+                Some(Sort::Name) => a
+                    .file_name()
+                    .to_str()
+                    .unwrap()
+                    .cmp(&b.file_name().to_str().unwrap()),
+                Some(Sort::Size) => {
+                    let a_size = a.path().metadata().unwrap().len();
+                    let b_size = b.path().metadata().unwrap().len();
+                    a_size.cmp(&b_size)
+                }
+                Some(Sort::Version) => Ordering::Equal,
+                None => Ordering::Equal,
+            };
+            if self.config.reverse {
+                order.reverse()
+            } else {
+                order
+            }
+        })
     }
 }
