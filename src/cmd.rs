@@ -154,8 +154,8 @@ pub struct Args {
     /// Turn off hyperlinks in HTML output
     #[clap(long)]
     pub nolinks: bool,
-    /// ------- Input options -------
-    // Reads paths from files (.=stdin)
+    // ------- Input options -------
+    /// Reads paths from files (.=stdin)
     #[clap(long)]
     pub fromfile: Option<String>,
     
