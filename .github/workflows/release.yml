@@ -73,7 +73,7 @@ jobs:
       - name: install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           target: ${{ matrix.target }}
           override: true
       - name: build
