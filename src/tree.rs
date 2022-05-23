@@ -31,7 +31,6 @@ impl Tree {
         }
     }
 
-    #[allow(unused)]
     pub fn validate(&mut self) -> Result<(), String> {
         if self.config.version {
             self.config.sort = Some(Sort::Version);
@@ -46,16 +45,21 @@ impl Tree {
             self.config.sort = None;
         }
         if self.config.sort == Some(Sort::Version) {
-            eprintln!("{}", "Sorting by version is not supported yet".red());
+            return Err("Sorting by version is not supported yet.".to_owned());
         }
         Ok(())
     }
 
     pub fn run(&mut self) {
-        match self.dfs(Path::new(&self.config.path.clone()), 0, "".to_owned()) {
-            Ok(_) => (),
+        match self.validate() {
+            Ok(_) => match self.dfs(Path::new(&self.config.path.clone()), 0, "".to_owned()) {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
+            },
             Err(e) => {
-                eprintln!("{}", e);
+                eprintln!("{}", e.red());
             }
         }
     }
@@ -139,7 +143,11 @@ impl Tree {
             }
         };
         if self.config.size || self.config.human_size {
-            res = format!("[{}] {}", self.size_to_string(path.metadata().ok()?.len()), res);
+            res = format!(
+                "[{}] {}",
+                self.size_to_string(path.metadata().ok()?.len()),
+                res
+            );
         }
         Some(res)
     }
