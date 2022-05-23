@@ -117,7 +117,10 @@ impl Tree {
     }
 
     fn file_name(&self, path: &Path) -> Option<String> {
-        let mut file_name = path.file_name()?.to_str()?.to_owned();
+        let mut file_name = match self.config.full_path {
+            true => path.display().to_string(),
+            false => path.file_name()?.to_str()?.to_owned(),
+        };
         if self.config.quote {
             file_name = format!("\"{}\"", file_name);
         }
