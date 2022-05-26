@@ -1,9 +1,8 @@
 use std::{
     cmp::Ordering,
-    collections::LinkedList,
     fs::{self, DirEntry},
     io,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use crate::cmd::{Args, Sort};
@@ -13,22 +12,15 @@ use is_executable::IsExecutable;
 pub struct Tree {
     pub config: Args,
     pub output: Option<Box<dyn io::Write>>,
-    pub paths: LinkedList<PathBuf>,
 }
 
 impl Tree {
     pub fn new(config: Args) -> Self {
-        let mut paths = LinkedList::new();
-        paths.push_back(PathBuf::from(config.path.clone()));
         let output = match config.output {
             Some(ref path) => Some(Box::new(fs::File::create(path).unwrap()) as Box<dyn io::Write>),
             None => None,
         };
-        Self {
-            config,
-            paths,
-            output,
-        }
+        Self { config, output }
     }
 
     pub fn validate(&mut self) -> Result<(), String> {
@@ -51,15 +43,26 @@ impl Tree {
     }
 
     pub fn run(&mut self) {
-        match self.validate() {
-            Ok(_) => match self.dfs(Path::new(&self.config.path.clone()), 0, "".to_owned()) {
-                Ok(_) => (),
-                Err(e) => {
-                    eprintln!("{}", e);
-                }
-            },
+        if let Err(e) = self.validate() {
+            eprintln!("{}", e.red());
+            return;
+        }
+        match self.filename(Path::new(&self.config.path.clone())).or_else(||{
+            if self.config.path == "." {
+                Some(".".to_owned())
+            }else {
+                None
+            }
+        }) {
+            Some(filename) => self.println(&filename),
+            None => {
+                eprintln!("{}", "No files found.".red());
+            }
+        }
+        match self.dfs(Path::new(&self.config.path.clone()), 0, "".to_owned()) {
+            Ok(_) => (),
             Err(e) => {
-                eprintln!("{}", e.red());
+                eprintln!("{}", e);
             }
         }
     }
@@ -95,7 +98,7 @@ impl Tree {
                 } else {
                     ("├", "│")
                 };
-                self.file_name(&path).and_then(|file_name| -> Option<()> {
+                self.filename(&path).and_then(|file_name| -> Option<()> {
                     self.println(&format!("{}{}── {}", prefix, prefix1, file_name));
                     Some(())
                 });
@@ -116,7 +119,7 @@ impl Tree {
         Ok(())
     }
 
-    fn file_name(&self, path: &Path) -> Option<String> {
+    fn filename(&self, path: &Path) -> Option<String> {
         let mut file_name = match self.config.full_path {
             true => path.display().to_string(),
             false => path.file_name()?.to_str()?.to_owned(),
