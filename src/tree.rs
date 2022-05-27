@@ -136,7 +136,7 @@ impl Tree {
                 } else if path.is_executable() {
                     file_name.green().bold().to_string()
                 } else {
-                    file_name.yellow().bold().to_string()
+                    file_name.to_string()
                 }
             }
             true => {
