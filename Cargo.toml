@@ -1,6 +1,6 @@
 [package]
 name = "trr"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Noah Hsu"]
 edition = "2021"
 description = "Tree command written in Rust"
