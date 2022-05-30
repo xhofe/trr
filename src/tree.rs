@@ -47,13 +47,15 @@ impl Tree {
             eprintln!("{}", e.red());
             return;
         }
-        match self.filename(Path::new(&self.config.path.clone())).or_else(||{
-            if self.config.path == "." {
-                Some(".".to_owned())
-            }else {
-                None
-            }
-        }) {
+        match self
+            .filename(Path::new(&self.config.path.clone()))
+            .or_else(|| {
+                if self.config.path == "." {
+                    Some(".".to_owned())
+                } else {
+                    None
+                }
+            }) {
             Some(filename) => self.println(&filename),
             None => {
                 eprintln!("{}", "No files found.".red());
@@ -92,6 +94,9 @@ impl Tree {
             self.sort(&mut entries);
             for (index, entry) in entries.iter().enumerate() {
                 let path = entry.path();
+                if !self.is_match(&path) {
+                    continue;
+                }
                 let is_last = index == entries.len() - 1;
                 let (prefix1, prefix2) = if is_last {
                     ("└", " ")
@@ -226,5 +231,24 @@ impl Tree {
             unit += 1;
         }
         format!("{:7.2}{}", size, units[unit])
+    }
+
+    fn is_match(&self, path: &Path) -> bool {
+        if path.is_dir() || (self.config.pattern.is_none() && self.config.ignore.is_none()) {
+            return true;
+        }
+        let is_ignore = self.config.ignore.is_some();
+        let pattern = if is_ignore {
+            self.config.ignore.as_ref().unwrap()
+        } else {
+            self.config.pattern.as_ref().unwrap()
+        };
+        let filename = path.file_name().unwrap().to_str().unwrap();
+        let m = if self.config.ignore_case {
+            filename.to_lowercase().contains(&pattern.to_lowercase())
+        } else {
+            filename.contains(pattern)
+        };
+        m ^ is_ignore
     }
 }
